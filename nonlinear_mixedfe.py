@@ -27,7 +27,6 @@ def nonlinear_mixedfe(automatic_jacobian):
     pressure_space = fenics.FunctionSpace(mesh, 'P', pressure_degree) # @todo mixing up test function space
 
     ''' MixedFunctionSpace used to be available but is now deprecated. 
-    The way that fenics separates function spaces and elements is confusing.
     To create the mixed space, I'm using the approach from https://fenicsproject.org/qa/11983/mixedfunctionspace-in-2016-2-0 '''
     velocity_element = fenics.VectorElement('P', mesh.ufl_cell(), velocity_degree)
 
