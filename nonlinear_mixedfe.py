@@ -7,6 +7,8 @@ import manual_newton
 @detail This is the well-known steady lid-driven cavity problem,
 modeled by the incompressible Navier-Stokes mass and momentum equations.
 
+Here we attempt to use the scripts from section 1.2.4 of the FEniCS book.
+
 @todo Debug the Jacobian bilinear variational form.'''
 
 def nonlinear_mixedfe(automatic_jacobian=True):
@@ -59,37 +61,30 @@ def nonlinear_mixedfe(automatic_jacobian=True):
     
     c = lambda w, z, v : dot(dot(grad(z), w), v)
     
-    w = fenics.Function(W)
-    
-    u, p = fenics.split(w)
-
-    v, q = fenics.TestFunctions(W)
-
-    F = (b(u, q) - gamma*p*q + c(u, u, v) + a(u, v) + b(v, p))*fenics.dx
-    
     
     # Solve nonlinear problem.
-    if automatic_jacobian:
+    dw = fenics.TrialFunction(W)
+    
+    du, dp = fenics.split(dw)
+    
+    v, q = fenics.TestFunctions(W)
         
-        JF = fenics.derivative(F, w)
+    w_ = fenics.Function(W)
+    
+    u_, p_ = fenics.split(w_)
+    
+    F = (b(u_, q) - gamma*p_*q + c(u_, u_, v) + a(u_, v) + b(v, p_))*fenics.dx
+    
+    if automatic_jacobian:
+    
+        JF = fenics.derivative(F, w_, dw)
         
     else:
-        
-        w_k = fenics.Function(W)
-        
-        u_k, p_k = fenics.split(w_k)
-        
-        dw = fenics.TrialFunction(W)
-        
-        du, dp = fenics.split(dw)
-        
-        A = (b(du, q) - gamma*dp*q + c(du, u_k, v) + c(u_k, du, v) + a(du, v) + b(v, dp))*fenics.dx
 
-        L = (b(u_k, q) - gamma*p_k*q + c(u_k, u_k, v) + a(u_k, v) + b(v, p_k))*fenics.dx
-
-        JF = A - L
+        JF = (b(du, q) - gamma*dp*q + c(du, u_, v) + c(u_, du, v) + a(du, v) + b(v, dp)
+            - (b(u_, q) - gamma*p_*q + c(u_, u_, v) + a(u_, v) + b(v, p_)))*fenics.dx
     
-    problem = fenics.NonlinearVariationalProblem(F, w, bcs, JF)
+    problem = fenics.NonlinearVariationalProblem(F, w_, bcs, JF)
 
     solver  = fenics.NonlinearVariationalSolver(problem)
 
