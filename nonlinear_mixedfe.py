@@ -9,7 +9,7 @@ modeled by the incompressible Navier-Stokes mass and momentum equations.
 
 @todo Debug the Jacobian bilinear variational form.'''
 
-def nonlinear_mixedfe(automatic_jacobian=True, automatic_newton=True):
+def nonlinear_mixedfe(automatic_jacobian=True):
 
 
     # Set numerical parameters.
@@ -88,27 +88,18 @@ def nonlinear_mixedfe(automatic_jacobian=True, automatic_newton=True):
         L = (b(u_k, q) - gamma*p_k*q + c(u_k, u_k, v) + a(u_k, v) + b(v, p_k))*fenics.dx
 
         JF = A - L
-        
-    if automatic_newton:
     
-        problem = fenics.NonlinearVariationalProblem(F, w, bcs, JF)
-    
-        solver  = fenics.NonlinearVariationalSolver(problem)
-    
-        solver.solve()
-        
-    else:
-        
-        assert(not automatic_jacobian)
-        
-        manual_newton.solve(A, L, w, bcs)
+    problem = fenics.NonlinearVariationalProblem(F, w, bcs, JF)
+
+    solver  = fenics.NonlinearVariationalSolver(problem)
+
+    solver.solve()
+
 
 
 if __name__=='__main__':
     
-    nonlinear_mixedfe(automatic_jacobian=True, automatic_newton=True)
+    nonlinear_mixedfe(automatic_jacobian=True)
     
-    nonlinear_mixedfe(automatic_jacobian=False, automatic_newton=False)
-    
-    nonlinear_mixedfe(automatic_jacobian=False, automatic_newton=True)
+    nonlinear_mixedfe(automatic_jacobian=False)
     
