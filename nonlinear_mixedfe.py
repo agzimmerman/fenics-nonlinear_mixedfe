@@ -1,5 +1,4 @@
 import fenics
-import manual_newton
 
 
 ''' @brief Example of nonlinear problem with mixed finite elements
@@ -81,8 +80,7 @@ def nonlinear_mixedfe(automatic_jacobian=True):
         
     else:
 
-        JF = (b(du, q) - gamma*dp*q + c(du, u_, v) + c(u_, du, v) + a(du, v) + b(v, dp)
-            - (b(u_, q) - gamma*p_*q + c(u_, u_, v) + a(u_, v) + b(v, p_)))*fenics.dx
+        JF = (b(du, q) - gamma*dp*q + c(u_, du, v) + c(du, u_, v) + a(du, v) + b(v, dp))*fenics.dx
     
     problem = fenics.NonlinearVariationalProblem(F, w_, bcs, JF)
 
