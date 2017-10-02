@@ -2,7 +2,7 @@
 import fenics
 
 
-def verify_against_ghia1982(w, mesh):
+def verify_against_ghia1982(w):
     """Verify the solution against results published in...
 
         @article{ghia1982high,
@@ -24,19 +24,15 @@ def verify_against_ghia1982(w, mesh):
         'ux': [1.0000, 0.8412, 0.7887, 0.7372, 0.6872, 0.2315, 0.0033, -0.1364, -0.2058,
                -0.2109, -0.1566, -0.1015, -0.0643, -0.0478, -0.0419, -0.0372, 0.0000]}
     
-    bbt = mesh.bounding_box_tree()
-    
     for i, true_ux in enumerate(data['ux']):
     
         p = fenics.Point(data['x'], data['y'][i])
+    
+        wval = w(p)
         
-        if bbt.collides_entity(p):
+        ux = wval[0]
         
-            wval = w(p)
-            
-            ux = wval[0]
-            
-            assert(abs(ux - true_ux) < 2.e-2)
+        assert(abs(ux - true_ux) < 2.e-2)
 
     print("Verified successfully against Ghia1982.")
 
@@ -187,21 +183,21 @@ def nonlinear_mixedfe(automatic_jacobian=True, Re=100., m = 20):
 
     
     # Return the solution and the mesh for verification or other purposes.
-    return w, mesh
+    return w
 
 
 def test_nonlinear_mixedfe_automatic_jacobian():
     """ Test the solver with an automatic Jacobian."""
-    w, mesh = nonlinear_mixedfe(automatic_jacobian=True)
+    w = nonlinear_mixedfe(automatic_jacobian=True)
 
-    verify_against_ghia1982(w, mesh)
+    verify_against_ghia1982(w)
 
 
 def test_nonlinear_mixedfe_manual_jacobian():
     """ Test the solver with the manually implemented Jacobian."""
-    w, mesh = nonlinear_mixedfe(automatic_jacobian=False)
+    w = nonlinear_mixedfe(automatic_jacobian=False)
     
-    verify_against_ghia1982(w, mesh)
+    verify_against_ghia1982(w)
 
     
 if __name__=='__main__':
