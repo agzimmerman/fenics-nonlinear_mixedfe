@@ -135,13 +135,13 @@ def nonlinear_mixedfe(automatic_jacobian=True, Re=100., m = 20):
     # Write the nonlinear variational form.
     v, q = fenics.TestFunctions(W)
         
-    w_ = fenics.Function(W)
+    w = fenics.Function(W)
     
-    u_, p_ = fenics.split(w_)
+    u, p = fenics.split(w)
     
     F = (
-        b(u_, q) - gamma*p_*q
-        + c(u_, u_, v) + a(u_, v) + b(v, p_)
+        b(u, q) - gamma*p*q
+        + c(u, u, v) + a(u, v) + b(v, p)
         )*fenics.dx
     
     
@@ -150,7 +150,7 @@ def nonlinear_mixedfe(automatic_jacobian=True, Re=100., m = 20):
     
     if automatic_jacobian:
     
-        JF = fenics.derivative(F, w_, dw)
+        JF = fenics.derivative(F, w, dw)
         
     else: 
         """Manually implement the exact Gateaux derivative.
@@ -160,12 +160,12 @@ def nonlinear_mixedfe(automatic_jacobian=True, Re=100., m = 20):
           
         JF = (
             b(du, q) - gamma*dp*q
-            + c(u_, du, v) + c(du, u_, v) + a(du, v) + b(v, dp)
+            + c(u, du, v) + c(du, u, v) + a(du, v) + b(v, dp)
             )*fenics.dx
     
     
     # Solve nonlinear problem.
-    problem = fenics.NonlinearVariationalProblem(F, w_, bcs, JF)
+    problem = fenics.NonlinearVariationalProblem(F, w, bcs, JF)
 
     solver  = fenics.NonlinearVariationalSolver(problem)
 
@@ -175,7 +175,7 @@ def nonlinear_mixedfe(automatic_jacobian=True, Re=100., m = 20):
     # Write the solution to disk for visualization.
     solution_files = [fenics.File('velocity.pvd'), fenics.File('pressure.pvd')]
     
-    velocity, pressure = w_.split()
+    velocity, pressure = w.split()
     
     velocity.rename("u", "velocity")
 
@@ -187,7 +187,7 @@ def nonlinear_mixedfe(automatic_jacobian=True, Re=100., m = 20):
 
     
     # Return the solution and the mesh for verification or other purposes.
-    return w_, mesh
+    return w, mesh
 
 
 def test_nonlinear_mixedfe_automatic_jacobian():
