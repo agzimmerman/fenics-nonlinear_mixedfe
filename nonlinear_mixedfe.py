@@ -64,29 +64,32 @@ def verify_against_ghia1982(w, mesh):
 
     print("Verified successfully against Ghia1982.")
 
-def nonlinear_mixedfe(automatic_jacobian=True, Re=100.):
+def nonlinear_mixedfe(automatic_jacobian=True, Re=100., m = 20):
 
     # Set physical parameters
     mu = 1./Re
     
     
     # Set numerical parameters.
-    mesh = fenics.UnitSquareMesh(20, 20, 'crossed')
+    mesh = fenics.UnitSquareMesh(m, m, 'crossed')
     
-    gamma = 1.e-7  # Parameter for pressure penalty formulation, should be on the order of 1.e-7-1.e-8
+    """ Parameter for pressure penalty formulation, should be on the order of 1.e-7-1.e-8"""
+    gamma = 1.e-7  
     
     pressure_degree = 1
 
 
-    # Set function spaces for the variational form     .
-    velocity_degree = pressure_degree + 1  # Higher order velocity element needed for stability (Donea, Huerta 2003)
+    # Set function spaces for the variational form
+    """ Higher order velocity element needed for stability (Donea, Huerta 2003)"""
+    velocity_degree = pressure_degree + 1
     
     velocity_space = fenics.VectorFunctionSpace(mesh, 'P', velocity_degree)
 
-    pressure_space = fenics.FunctionSpace(mesh, 'P', pressure_degree) # @todo mixing up test function space
+    pressure_space = fenics.FunctionSpace(mesh, 'P', pressure_degree)
 
-    ''' MixedFunctionSpace used to be available but is now deprecated. 
-    To create the mixed space, I'm using the approach from https://fenicsproject.org/qa/11983/mixedfunctionspace-in-2016-2-0 '''
+    """ MixedFunctionSpace used to be available but is now deprecated. 
+    To create the mixed space, I'm using the approach from https://fenicsproject.org/qa/11983/mixedfunctionspace-in-2016-2-0
+    """
     velocity_element = fenics.VectorElement('P', mesh.ufl_cell(), velocity_degree)
 
     pressure_element = fenics.FiniteElement('P', mesh.ufl_cell(), pressure_degree)
@@ -127,11 +130,7 @@ def nonlinear_mixedfe(automatic_jacobian=True, Re=100.):
     c = lambda w, z, v : dot(dot(grad(z), w), v)
     
     
-    # Solve nonlinear problem.
-    dw = fenics.TrialFunction(W)
-    
-    du, dp = fenics.split(dw)
-    
+    # Write the nonlinear variational form.
     v, q = fenics.TestFunctions(W)
         
     w_ = fenics.Function(W)
@@ -139,27 +138,53 @@ def nonlinear_mixedfe(automatic_jacobian=True, Re=100.):
     u_, p_ = fenics.split(w_)
     
     F = (
-        b(u_, q) - gamma*p_*q 
+        b(u_, q) - gamma*p_*q
         + c(u_, u_, v) + a(u_, v) + b(v, p_)
         )*fenics.dx
+    
+    
+    # Write the Jacobian in variational form.
+    dw = fenics.TrialFunction(W)  # Residual, solution of the Newton linearized system
     
     if automatic_jacobian:
     
         JF = fenics.derivative(F, w_, dw)
         
-    else:
-
+    else: 
+        """Manually implement the exact Gateaux derivative.
+        This is both more robust and more computationally efficient,
+        at the cost of having to do some basic calculus."""
+        du, dp = fenics.split(dw)
+          
         JF = (
             b(du, q) - gamma*dp*q
             + c(u_, du, v) + c(du, u_, v) + a(du, v) + b(v, dp)
             )*fenics.dx
     
+    
+    # Solve nonlinear problem.
     problem = fenics.NonlinearVariationalProblem(F, w_, bcs, JF)
 
     solver  = fenics.NonlinearVariationalSolver(problem)
 
     solver.solve()
     
+    
+    # Write the solution to disk for visualization.
+    solution_files = [fenics.File('velocity.pvd'), fenics.File('pressure.pvd')]
+    
+    velocity, pressure = w_.split()
+    
+    velocity.rename("u", "velocity")
+
+    pressure.rename("p", "pressure")
+
+    for i, var in enumerate([velocity, pressure]):
+
+        solution_files[i] << var
+
+    
+    # Return the solution and the mesh for verification or other purposes.
     return w_, mesh
 
     
