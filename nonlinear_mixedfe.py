@@ -4,11 +4,28 @@ import fenics
 ''' @brief Example of nonlinear problem with mixed finite elements
 
 @detail This is the well-known steady lid-driven cavity problem,
-modeled by the incompressible Navier-Stokes mass and momentum equations.
+modeled by the incompressible Navier-Stokes mass and momentum equations,
+stabilized with a pressure penalty formulation.
 
-Here we attempt to use the scripts from section 1.2.4 of the FEniCS book.
+Most of the theory can be found in 
 
-@todo Debug the Jacobian bilinear variational form.'''
+    @book{donea2003finite,
+      title={Finite element methods for flow problems},
+      author={Donea, Jean and Huerta, Antonio},
+      year={2003},
+      publisher={John Wiley \& Sons}
+    }
+
+For the FEniCS implementation, we use the approach from section 1.2.4 of the FEniCS Book,
+
+    @book{logg2012automated,
+      title={Automated solution of differential equations by the finite element method: The FEniCS book},
+      author={Logg, Anders and Mardal, Kent-Andre and Wells, Garth},
+      volume={84},
+      year={2012},
+      publisher={Springer Science \& Business Media}
+    }
+'''
 
 def nonlinear_mixedfe(automatic_jacobian=True):
 
@@ -16,13 +33,13 @@ def nonlinear_mixedfe(automatic_jacobian=True):
     # Set numerical parameters.
     mesh = fenics.UnitSquareMesh(10, 10, 'crossed')
     
-    gamma = 1.e-7
+    gamma = 1.e-7  # Parameter for pressure penalty formulation, should be on the order of 1.e-7-1.e-8
     
     pressure_degree = 1
 
 
     # Set function spaces for the variational form     .
-    velocity_degree = pressure_degree + 1
+    velocity_degree = pressure_degree + 1  # Higher order velocity element needed for stability (Donea, Huerta 2003)
     
     velocity_space = fenics.VectorFunctionSpace(mesh, 'P', velocity_degree)
 
@@ -39,7 +56,7 @@ def nonlinear_mixedfe(automatic_jacobian=True):
     W = fenics.FunctionSpace(mesh, W_ele)  
     
     
-    # Set boundary conditions.
+    # Set Dirichlet boundary conditions.
     bcs = [
         fenics.DirichletBC(W.sub(0), fenics.Expression(("1.", "0."), degree=velocity_degree + 1),
             'near(x[1],  1.)', method='topological'),
