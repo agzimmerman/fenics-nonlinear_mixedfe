@@ -29,7 +29,10 @@ For the FEniCS implementation, we use the approach from section 1.2.4 of the FEn
 
 def nonlinear_mixedfe(automatic_jacobian=True):
 
-
+    # Set physical parameters
+    Re = 100.
+    
+    
     # Set numerical parameters.
     mesh = fenics.UnitSquareMesh(10, 10, 'crossed')
     
@@ -58,7 +61,7 @@ def nonlinear_mixedfe(automatic_jacobian=True):
     
     # Set Dirichlet boundary conditions.
     bcs = [
-        fenics.DirichletBC(W.sub(0), fenics.Expression(("1.", "0."), degree=velocity_degree + 1),
+        fenics.DirichletBC(W.sub(0), fenics.Expression((str(Re), "0."), degree=velocity_degree + 1),
             'near(x[1],  1.)', method='topological'),
         fenics.DirichletBC(W.sub(0), fenics.Expression(("0.", "0."), degree=velocity_degree + 1),
             'near(x[0],  0.) | near(x[0],  1.) | near(x[1],  0.)', method='topological'),
@@ -89,7 +92,10 @@ def nonlinear_mixedfe(automatic_jacobian=True):
     
     u_, p_ = fenics.split(w_)
     
-    F = (b(u_, q) - gamma*p_*q + c(u_, u_, v) + a(u_, v) + b(v, p_))*fenics.dx
+    F = (
+        b(u_, q) - gamma*p_*q 
+        + c(u_, u_, v) + a(u_, v) + b(v, p_)
+        )*fenics.dx
     
     if automatic_jacobian:
     
@@ -97,7 +103,10 @@ def nonlinear_mixedfe(automatic_jacobian=True):
         
     else:
 
-        JF = (b(du, q) - gamma*dp*q + c(u_, du, v) + c(du, u_, v) + a(du, v) + b(v, dp))*fenics.dx
+        JF = (
+            b(du, q) - gamma*dp*q
+            + c(u_, du, v) + c(du, u_, v) + a(du, v) + b(v, dp)
+            )*fenics.dx
     
     problem = fenics.NonlinearVariationalProblem(F, w_, bcs, JF)
 
