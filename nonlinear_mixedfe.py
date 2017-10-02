@@ -1,46 +1,22 @@
-""" Solve a nonlinear problem with mixed finite elements using FEniCS.
-
-This is the well-known steady lid-driven cavity problem,
-modeled by the incompressible Navier-Stokes mass and momentum equations,
-stabilized with a pressure penalty formulation.
-
-Most of the theory can be found in 
-
-    @book{donea2003finite,
-      title={Finite element methods for flow problems},
-      author={Donea, Jean and Huerta, Antonio},
-      year={2003},
-      publisher={John Wiley \& Sons}
-    }
-
-For the FEniCS implementation, we use the approach from section 1.2.4 of the FEniCS Book,
-
-    @book{logg2012automated,
-      title={Automated solution of differential equations by the finite element method: The FEniCS book},
-      author={Logg, Anders and Mardal, Kent-Andre and Wells, Garth},
-      volume={84},
-      year={2012},
-      publisher={Springer Science \& Business Media}
-    }
-"""
+""" This is an example of how to use mixed finite elements to solve nonlinear problems """
 import fenics
 
 
-"""Verify the solution against results published in...
-
-    @article{ghia1982high,
-      title={High-Re solutions for incompressible flow using 
-        the Navier-Stokes equations and a multigrid method},
-      author={Ghia, UKNG and Ghia, Kirti N and Shin, CT},
-      journal={Journal of computational physics},
-      volume={48},
-      number={3},
-      pages={387--411},
-      year={1982},
-      publisher={Elsevier}
-    }
-"""
 def verify_against_ghia1982(w, mesh):
+    """Verify the solution against results published in...
+
+        @article{ghia1982high,
+          title={High-Re solutions for incompressible flow using 
+            the Navier-Stokes equations and a multigrid method},
+          author={Ghia, UKNG and Ghia, Kirti N and Shin, CT},
+          journal={Journal of computational physics},
+          volume={48},
+          number={3},
+          pages={387--411},
+          year={1982},
+          publisher={Elsevier}
+        }
+    """
 
     data = {'Re': 100, 'x': 0.5,
         'y': [1.0000, 0.9766, 0.9688, 0.9609, 0.9531, 0.8516, 0.7344, 0.6172, 0.5000, 0.4531, 
@@ -64,7 +40,33 @@ def verify_against_ghia1982(w, mesh):
 
     print("Verified successfully against Ghia1982.")
 
+
 def nonlinear_mixedfe(automatic_jacobian=True, Re=100., m = 20):
+    """ Solve a nonlinear problem with mixed finite elements using FEniCS.
+
+    This is the well-known steady lid-driven cavity problem,
+    modeled by the incompressible Navier-Stokes mass and momentum equations,
+    stabilized with a pressure penalty formulation.
+
+    Most of the theory can be found in 
+
+        @book{donea2003finite,
+          title={Finite element methods for flow problems},
+          author={Donea, Jean and Huerta, Antonio},
+          year={2003},
+          publisher={John Wiley \& Sons}
+        }
+
+    For the FEniCS implementation, we use the approach from section 1.2.4 of the FEniCS Book,
+
+        @book{logg2012automated,
+          title={Automated solution of differential equations by the finite element method: The FEniCS book},
+          author={Logg, Anders and Mardal, Kent-Andre and Wells, Garth},
+          volume={84},
+          year={2012},
+          publisher={Springer Science \& Business Media}
+        }
+    """
 
     # Set physical parameters
     mu = 1./Re
@@ -187,16 +189,16 @@ def nonlinear_mixedfe(automatic_jacobian=True, Re=100., m = 20):
     # Return the solution and the mesh for verification or other purposes.
     return w_, mesh
 
-    
-def test_nonlinear_mixedfe_automatic_jacobian():
 
+def test_nonlinear_mixedfe_automatic_jacobian():
+    """ Test the solver with an automatic Jacobian."""
     w, mesh = nonlinear_mixedfe(automatic_jacobian=True)
 
     verify_against_ghia1982(w, mesh)
-    
-    
-def test_nonlinear_mixedfe_manual_jacobian():
 
+
+def test_nonlinear_mixedfe_manual_jacobian():
+    """ Test the solver with the manually implemented Jacobian."""
     w, mesh = nonlinear_mixedfe(automatic_jacobian=False)
     
     verify_against_ghia1982(w, mesh)
