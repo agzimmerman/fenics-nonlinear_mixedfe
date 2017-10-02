@@ -1,9 +1,6 @@
-import fenics
+""" Solve a nonlinear problem with mixed finite elements using FEniCS.
 
-
-''' @brief Example of nonlinear problem with mixed finite elements
-
-@detail This is the well-known steady lid-driven cavity problem,
+This is the well-known steady lid-driven cavity problem,
 modeled by the incompressible Navier-Stokes mass and momentum equations,
 stabilized with a pressure penalty formulation.
 
@@ -25,16 +22,56 @@ For the FEniCS implementation, we use the approach from section 1.2.4 of the FEn
       year={2012},
       publisher={Springer Science \& Business Media}
     }
-'''
+"""
+import fenics
 
-def nonlinear_mixedfe(automatic_jacobian=True):
+
+"""Verify the solution against results published in...
+
+    @article{ghia1982high,
+      title={High-Re solutions for incompressible flow using 
+        the Navier-Stokes equations and a multigrid method},
+      author={Ghia, UKNG and Ghia, Kirti N and Shin, CT},
+      journal={Journal of computational physics},
+      volume={48},
+      number={3},
+      pages={387--411},
+      year={1982},
+      publisher={Elsevier}
+    }
+"""
+def verify_against_ghia1982(w, mesh):
+
+    data = {'Re': 100, 'x': 0.5,
+        'y': [1.0000, 0.9766, 0.9688, 0.9609, 0.9531, 0.8516, 0.7344, 0.6172, 0.5000, 0.4531, 
+              0.2813, 0.1719, 0.1016, 0.0703, 0.0625, 0.0547, 0.0000],
+        'ux': [1.0000, 0.8412, 0.7887, 0.7372, 0.6872, 0.2315, 0.0033, -0.1364, -0.2058,
+               -0.2109, -0.1566, -0.1015, -0.0643, -0.0478, -0.0419, -0.0372, 0.0000]}
+    
+    bbt = mesh.bounding_box_tree()
+    
+    for i, true_ux in enumerate(data['ux']):
+    
+        p = fenics.Point(data['x'], data['y'][i])
+        
+        if bbt.collides_entity(p):
+        
+            wval = w(p)
+            
+            ux = wval[0]
+            
+            assert(abs(ux - true_ux) < 2.e-2)
+
+    print("Verified successfully against Ghia1982.")
+
+def nonlinear_mixedfe(automatic_jacobian=True, Re=100.):
 
     # Set physical parameters
-    Re = 100.
+    mu = 1./Re
     
     
     # Set numerical parameters.
-    mesh = fenics.UnitSquareMesh(10, 10, 'crossed')
+    mesh = fenics.UnitSquareMesh(20, 20, 'crossed')
     
     gamma = 1.e-7  # Parameter for pressure penalty formulation, should be on the order of 1.e-7-1.e-8
     
@@ -61,12 +98,21 @@ def nonlinear_mixedfe(automatic_jacobian=True):
     
     # Set Dirichlet boundary conditions.
     bcs = [
-        fenics.DirichletBC(W.sub(0), fenics.Expression((str(Re), "0."), degree=velocity_degree + 1),
-            'near(x[1],  1.)', method='topological'),
-        fenics.DirichletBC(W.sub(0), fenics.Expression(("0.", "0."), degree=velocity_degree + 1),
-            'near(x[0],  0.) | near(x[0],  1.) | near(x[1],  0.)', method='topological'),
-        fenics.DirichletBC(W.sub(1), fenics.Expression("0.", degree=pressure_degree + 1),
-            'near(x[0], 0.) && near(x[1], 0.)', method='pointwise')]    
+        fenics.DirichletBC(W.sub(0),
+            fenics.Expression(("1.", "0."),
+            degree=velocity_degree + 1),
+            'near(x[1],  1.)',
+            method='topological'),
+        fenics.DirichletBC(W.sub(0),
+            fenics.Expression(("0.", "0."),
+            degree=velocity_degree + 1),
+            'near(x[0],  0.) | near(x[0],  1.) | near(x[1],  0.)',
+            method='topological'),
+        fenics.DirichletBC(W.sub(1),
+            fenics.Expression("0.",
+            degree=pressure_degree + 1),
+            'near(x[0], 0.) && near(x[1], 0.)',
+            method='pointwise')]    
     
     
     # Set nonlinear variational form.
@@ -74,7 +120,7 @@ def nonlinear_mixedfe(automatic_jacobian=True):
     
     D = lambda u : sym(grad(u))
     
-    a = lambda u, v : 2.*inner(D(u), D(v))
+    a = lambda u, v : 2.*mu*inner(D(u), D(v))
     
     b = lambda u, q : -div(u)*q
     
@@ -113,12 +159,27 @@ def nonlinear_mixedfe(automatic_jacobian=True):
     solver  = fenics.NonlinearVariationalSolver(problem)
 
     solver.solve()
+    
+    return w_, mesh
 
+    
+def test_nonlinear_mixedfe_automatic_jacobian():
 
+    w, mesh = nonlinear_mixedfe(automatic_jacobian=True)
 
+    verify_against_ghia1982(w, mesh)
+    
+    
+def test_nonlinear_mixedfe_manual_jacobian():
+
+    w, mesh = nonlinear_mixedfe(automatic_jacobian=False)
+    
+    verify_against_ghia1982(w, mesh)
+
+    
 if __name__=='__main__':
     
-    nonlinear_mixedfe(automatic_jacobian=True)
+    test_nonlinear_mixedfe_automatic_jacobian()
     
-    nonlinear_mixedfe(automatic_jacobian=False)
+    test_nonlinear_mixedfe_manual_jacobian()
     
